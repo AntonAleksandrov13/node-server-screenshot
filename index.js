@@ -162,8 +162,8 @@ module.exports.fromHTML = function (html, path, options, callback) {
     var n = Nightmare({
         switches: {'force-device-scale-factor': options.scale ? options.scale.toString() : '1'},
         show: typeof options.show === 'boolean' ? options.show : true,
-        width: options.width || 1280,
-        height: options.height || 720
+        width: options.width || 600,
+        height: options.height || 400
     });
 
     n
