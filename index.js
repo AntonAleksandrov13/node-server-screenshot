@@ -1,4 +1,6 @@
 var Nightmare = require("nightmare");
+require('nightmare-window-manager')(Nightmare);
+
 
 /**
  * Callback for taking a screenshot of a web page.
@@ -55,16 +57,22 @@ Nightmare.action('injectHTML', function (selector, html, done) {
  * @param {Number} options.clip.height
  *
  * @param {screenshotCallback} callback
+ * @param patternForDetectingCookieConsent A regular expression that should match a text inside <a> tag.
+ *                                          This way you can find a cookie consent button and click it later on
+ * @param patternFlags
  */
-module.exports.fromURL = function (url, path, options, callback) {
+module.exports.fromURL = function (url, path, options, callback, patternForDetectingCookieConsent, patternFlags) {
     "use strict";
 
-    if(typeof options == "function") {
+    if (typeof options == "function") {
         callback = options;
         options = null;
     }
+    patternForDetectingCookieConsent = patternForDetectingCookieConsent || /(ok)|(agree)|(accept)|(cookies)/;
+    patternFlags = patternFlags || ["i"];
     options = options || {};
-    callback = callback || function(){};
+    callback = callback || function () {
+    };
     if (options.clip) {
         if (typeof options.clip.x !== 'number') {
             options.clip.x = 0;
@@ -75,16 +83,27 @@ module.exports.fromURL = function (url, path, options, callback) {
     }
 
     var n = Nightmare({
-        switches: { 'force-device-scale-factor': options.scale ? options.scale.toString() : '1' },
+        switches: {'force-device-scale-factor': options.scale ? options.scale.toString() : '1'},
         show: typeof options.show === 'boolean' ? options.show : true,
-        width: options.width || 1280,
-        height: options.height || 720
+        width: options.width || 1400,
+        height: options.height || 720,
+        executionTimeout: 5000
     });
 
     n
         .goto(url)
         .wait(options.waitAfterSelector || "html")
-        .wait(options.waitMilliseconds || 1000)
+        //let it show a cookie consent pop up
+        .wait(2000)
+        .evaluate((pattern, flags)  => {
+            //filters elements
+            const elements = Array.from(document.querySelectorAll('a')).filter(a => new RegExp(pattern, flags.toString()).test(a.innerText));
+            //checks if anything has been found
+            if (elements.length > 0)
+                elements[0].className += " click-class";
+        }, patternForDetectingCookieConsent, patternFlags)
+        .click('.click-class')  //click em, yee haaw
+        .wait(2000)
         .screenshot(
             path || undefined,
             options.clip || undefined
@@ -95,6 +114,7 @@ module.exports.fromURL = function (url, path, options, callback) {
         .catch(function (err) {
             callback(err);
         });
+
     n.end();
 };
 
@@ -121,13 +141,14 @@ module.exports.fromURL = function (url, path, options, callback) {
  */
 module.exports.fromHTML = function (html, path, options, callback) {
     "use strict";
-    if(typeof options == "function") {
+    if (typeof options == "function") {
         callback = options;
         options = null;
     }
 
     options = options || {};
-    callback = callback || function(){};
+    callback = callback || function () {
+    };
     options.inject = options.inject || {};
     if (options.clip) {
         if (typeof options.clip.x !== 'number') {
@@ -139,7 +160,7 @@ module.exports.fromHTML = function (html, path, options, callback) {
     }
 
     var n = Nightmare({
-        switches: { 'force-device-scale-factor': options.scale ? options.scale.toString() : '1' },
+        switches: {'force-device-scale-factor': options.scale ? options.scale.toString() : '1'},
         show: typeof options.show === 'boolean' ? options.show : true,
         width: options.width || 1280,
         height: options.height || 720
@@ -157,7 +178,7 @@ module.exports.fromHTML = function (html, path, options, callback) {
             options.clip || undefined
         )
         .then(function (buff) {
-          callback(null, buff);
+            callback(null, buff);
         })
         .catch(function (err) {
             callback(err);
