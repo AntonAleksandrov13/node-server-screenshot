@@ -85,8 +85,8 @@ module.exports.fromURL = function (url, path, options, callback, patternForDetec
     var n = Nightmare({
         switches: {'force-device-scale-factor': options.scale ? options.scale.toString() : '1'},
         show: typeof options.show === 'boolean' ? options.show : true,
-        width: options.width || 1400,
-        height: options.height || 720,
+        width: options.width || 1366,
+        height: options.height || 768,
         executionTimeout: 5000
     });
 
@@ -162,8 +162,8 @@ module.exports.fromHTML = function (html, path, options, callback) {
     var n = Nightmare({
         switches: {'force-device-scale-factor': options.scale ? options.scale.toString() : '1'},
         show: typeof options.show === 'boolean' ? options.show : true,
-        width: options.width || 600,
-        height: options.height || 400
+        width: options.width || 1366,
+        height: options.height || 768
     });
 
     n
